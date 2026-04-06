@@ -44,12 +44,29 @@
 // export default ProtectedRoute;
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 const ProtectedRoute = ({ children }) => {
   const [isValid, setIsValid] = useState(null);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tokenFromUrl = params.get("token");
+    const userFromUrl = params.get("user");
+
+    if (tokenFromUrl) {
+      localStorage.setItem("token", tokenFromUrl);
+    }
+
+    if (userFromUrl) {
+      try {
+        const parsedUser = JSON.parse(decodeURIComponent(userFromUrl));
+        localStorage.setItem("user", JSON.stringify(parsedUser));
+      } catch {
+        setIsValid(false);
+        return;
+      }
+    }
+
     const token = localStorage.getItem("token");
     const userData = localStorage.getItem("user");
 
