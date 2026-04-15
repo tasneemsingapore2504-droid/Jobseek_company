@@ -1,56 +1,67 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+const emptyForm = {
+  cname: "",
+  website: "",
+  cemail: "",
+  cpnum: "",
+  address: "",
+  csize: "",
+  branch: "",
+};
+
+const normalizeProfile = (profile = {}) => ({
+  cname: profile?.cname || "",
+  website: profile?.website || "",
+  cemail: profile?.cemail || "",
+  cpnum: profile?.cpnum || "",
+  address: profile?.address || "",
+  csize: profile?.csize || "",
+  branch: profile?.branch || "",
+});
+
 const CompanyProfile = () => {
-  const [form, setForm] = useState({
-    cname: "",
-    website: "",
-    cemail: "",
-    cpnum: "",
-    address: "",
-    csize: "",
-    branch: "",
-  });
-
-  const user = JSON.parse(localStorage.getItem("user"));
-
+  const [form, setForm] = useState(emptyForm);
   const [profileExists, setProfileExists] = useState(false);
 
   const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "null");
 
-  // 🔥 Fetch profile
+  const authHeaders = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
   const fetchProfile = async () => {
+    if (!token || !user?.id) {
+      localStorage.removeItem("companyProfile");
+      setForm(emptyForm);
+      setProfileExists(false);
+      return;
+    }
+
     try {
-      const companyId = JSON.parse(
-        localStorage.getItem("companyProfile"),
-      )?.companyId;
       const res = await axios.get(
-        `http://localhost:5000/api/companyprofile/${companyId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        },
+        "http://localhost:5000/api/companyprofile",
+        authHeaders,
       );
-      console.log("FETCHED PROFILE:", res.data);
 
       if (res.data) {
         localStorage.setItem("companyProfile", JSON.stringify(res.data));
-        setForm({
-          cname: res.data?.cname || "",
-          website: res.data?.website || "",
-          cemail: res.data?.cemail || "",
-          cpnum: res.data?.cpnum || "",
-          address: res.data?.address || "",
-          csize: res.data?.csize || "",
-          branch: res.data?.branch || "",
-        });
+        setForm(normalizeProfile(res.data));
         setProfileExists(true);
       } else {
+        localStorage.removeItem("companyProfile");
+        setForm(emptyForm);
         setProfileExists(false);
       }
     } catch (err) {
       console.log(err);
+      localStorage.removeItem("companyProfile");
+      setForm(emptyForm);
+      setProfileExists(false);
     }
   };
 
@@ -62,78 +73,47 @@ const CompanyProfile = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // 🔥 Save / Update
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const token = localStorage.getItem("token");
-      const companyId = JSON.parse(
-        localStorage.getItem("companyProfile"),
-      )?.companyId;
+      const res = profileExists
+        ? await axios.put(
+            `http://localhost:5000/api/companyprofile/${user.id}`,
+            form,
+            authHeaders,
+          )
+        : await axios.post(
+            "http://localhost:5000/api/companyprofile",
+            form,
+            authHeaders,
+          );
 
-      let res;
+      alert(profileExists ? "Profile updated" : "Profile created");
 
-      if (profileExists) {
-        // 🔥 UPDATE (PUT)
-        res = await axios.put(
-          `http://localhost:5000/api/companyprofile/${companyId}`,
-          form,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-        alert("Profile updated");
-      } else {
-        // 🔥 CREATE (POST)
-        res = await axios.post(
-          `http://localhost:5000/api/companyprofile`,
-          form,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-        alert("Profile created");
-      }
-
-      console.log("RESPONSE:", res.data);
-
-      // ✅ Always sync latest data
       localStorage.setItem("companyProfile", JSON.stringify(res.data));
-
-      setForm(res.data);
+      setForm(normalizeProfile(res.data));
       setProfileExists(true);
     } catch (err) {
       console.log(err);
+      alert(err?.response?.data?.message || "Unable to save company profile");
     }
   };
 
-  // 🔥 Delete
   const handleDelete = async () => {
     try {
-      await axios.delete(`http://localhost:5000/api/companyprofile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await axios.delete(
+        `http://localhost:5000/api/companyprofile/${user.id}`,
+        authHeaders,
+      );
 
       alert("Profile deleted");
-      setForm({
-        cname: "",
-        website: "",
-        cemail: "",
-        cpnum: "",
-        address: "",
-        csize: "",
-        branch: "",
-      });
+      localStorage.removeItem("companyProfile");
+      setForm(emptyForm);
       setProfileExists(false);
     } catch (err) {
       console.log(err);
+      alert(err?.response?.data?.message || "Unable to delete company profile");
     }
   };
 
@@ -142,57 +122,64 @@ const CompanyProfile = () => {
       <h2>Company Profile</h2>
 
       <form onSubmit={handleSubmit}>
+        <label className="form-label">Company Name</label>
         <input
           name="cname"
-          value={form.cname || ""}
+          value={form.cname}
           onChange={handleChange}
           placeholder="Company Name"
           className="form-control mb-2"
         />
 
+        <label className="form-label">Website</label>
         <input
           name="website"
-          value={form.website || ""}
+          value={form.website}
           onChange={handleChange}
           placeholder="Website"
           className="form-control mb-2"
         />
 
+        <label className="form-label">Email</label>
         <input
           name="cemail"
-          value={form.cemail || ""}
+          value={form.cemail}
           onChange={handleChange}
           placeholder="Email"
           className="form-control mb-2"
         />
 
+        <label className="form-label">Phone</label>
         <input
           name="cpnum"
-          value={form.cpnum || ""}
+          value={form.cpnum}
           onChange={handleChange}
           placeholder="Phone"
           className="form-control mb-2"
         />
 
+        <label className="form-label">Address</label>
         <input
           name="address"
-          value={form.address || ""}
+          value={form.address}
           onChange={handleChange}
           placeholder="Address"
           className="form-control mb-2"
         />
 
+        <label className="form-label">Company Size</label>
         <input
           name="csize"
-          value={form.csize || ""}
+          value={form.csize}
           onChange={handleChange}
           placeholder="Company Size"
           className="form-control mb-2"
         />
 
+        <label className="form-label">Branch Details</label>
         <input
           name="branch"
-          value={form.branch || ""}
+          value={form.branch}
           onChange={handleChange}
           placeholder="Branch Details"
           className="form-control mb-2"
@@ -243,7 +230,11 @@ const CompanyProfile = () => {
       )}
 
       {profileExists && (
-        <button className="btn btn-danger mt-3" onClick={handleDelete}>
+        <button
+          type="button"
+          className="btn btn-danger mt-3"
+          onClick={handleDelete}
+        >
           Delete Profile
         </button>
       )}

@@ -299,6 +299,7 @@ export default function CompanyJobs() {
       <h2>Post a Job</h2>
 
       <div className="card p-3 mb-4">
+        <label className="form-label">Title</label>
         <input
           name="title"
           value={form.title}
@@ -306,6 +307,7 @@ export default function CompanyJobs() {
           onChange={handleChange}
           className="form-control mb-2"
         />
+        <label className="form-label">Description</label>
         <input
           name="description"
           value={form.description}
@@ -313,6 +315,7 @@ export default function CompanyJobs() {
           onChange={handleChange}
           className="form-control mb-2"
         />
+        <label className="form-label">Requirement</label>
         <input
           name="requirement"
           value={form.requirement}
@@ -320,6 +323,7 @@ export default function CompanyJobs() {
           onChange={handleChange}
           className="form-control mb-2"
         />
+        <label className="form-label">Qualification</label>
         <input
           name="qualification"
           value={form.qualification}
@@ -327,6 +331,7 @@ export default function CompanyJobs() {
           onChange={handleChange}
           className="form-control mb-2"
         />
+        <label className="form-label">Skills</label>
         <input
           name="skills"
           value={form.skills}
@@ -334,6 +339,7 @@ export default function CompanyJobs() {
           onChange={handleChange}
           className="form-control mb-2"
         />
+        <label className="form-label">Salary</label>
         <input
           name="salary"
           value={form.salary}
@@ -341,13 +347,31 @@ export default function CompanyJobs() {
           onChange={handleChange}
           className="form-control mb-2"
         />
+        {/* <label className="form-label">Job Type</label>
         <input
           name="jobType"
           value={form.jobType}
           placeholder="Job Type"
           onChange={handleChange}
           className="form-control mb-2"
-        />
+        /> */}
+
+        <label className="form-label">Job Type</label>
+        <select
+          name="jobType"
+          value={form.jobType}
+          onChange={handleChange}
+          className="form-control mb-2"
+        >
+          <option value="" disabled>
+            Select Job Type
+          </option>
+          <option value="Full-time">Full-time</option>
+          <option value="Part-time">Part-time</option>
+          <option value="Contract">Internship</option>
+        </select>
+
+        <label className="form-label">Last Date</label>
         <input
           name="lastDate"
           type="date"
@@ -355,13 +379,31 @@ export default function CompanyJobs() {
           onChange={handleChange}
           className="form-control mb-2"
         />
+        {/* <label className="form-label">Work Mode</label>
         <input
           name="workMode"
           value={form.workMode}
           placeholder="Work Mode"
           onChange={handleChange}
           className="form-control mb-2"
-        />
+        /> */}
+
+        <label className="form-label">Work Mode</label>
+        <select
+          name="workMode"
+          value={form.workMode}
+          onChange={handleChange}
+          className="form-control mb-2"
+        >
+          <option value="" disabled>
+            Select Work Mode
+          </option>
+          <option value="Remote">Remote</option>
+          <option value="On-site">On-site</option>
+          <option value="Hybrid">Hybrid</option>
+        </select>
+
+        <label className="form-label">Country</label>
         <input
           name="country"
           value={form.country}
@@ -369,6 +411,7 @@ export default function CompanyJobs() {
           onChange={handleChange}
           className="form-control mb-2"
         />
+        <label className="form-label">State</label>
         <input
           name="state"
           value={form.state}
@@ -376,6 +419,7 @@ export default function CompanyJobs() {
           onChange={handleChange}
           className="form-control mb-2"
         />
+        <label className="form-label">City</label>
         <input
           name="city"
           value={form.city}
@@ -383,6 +427,7 @@ export default function CompanyJobs() {
           onChange={handleChange}
           className="form-control mb-2"
         />
+        <label className="form-label">Apply Link</label>
         <input
           name="link"
           value={form.link}

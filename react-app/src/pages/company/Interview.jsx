@@ -7,8 +7,11 @@ function InterviewForm() {
   const navigate = useNavigate();
 
   const [application, setApplication] = useState(null);
+  const [existingInterview, setExistingInterview] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const [savingResult, setSavingResult] = useState(false);
+
   const [form, setForm] = useState({
     cname: "",
     intDate: "",
@@ -19,6 +22,11 @@ function InterviewForm() {
     selection: "selected",
   });
 
+  const [resultForm, setResultForm] = useState({
+    interviewResult: "pending",
+    remarks: "",
+  });
+
   const authHeaders = {
     headers: {
       Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -26,21 +34,46 @@ function InterviewForm() {
   };
 
   useEffect(() => {
-    const fetchApplication = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get(
+        const appRes = await axios.get(
           `http://localhost:5000/api/applications/${id}`,
           authHeaders,
         );
 
-        setApplication(res.data);
+        setApplication(appRes.data);
         setForm((current) => ({
           ...current,
-          cname: res.data.cname || "",
+          cname: appRes.data.cname || "",
           candidateName:
-            `${res.data.fname || ""} ${res.data.lname || ""}`.trim(),
-          apPos: res.data.apPos || "",
+            `${appRes.data.fname || ""} ${appRes.data.lname || ""}`.trim(),
+          apPos: appRes.data.apPos || "",
         }));
+
+        try {
+          const interviewRes = await axios.get(
+            `http://localhost:5000/api/interview/application/${id}`,
+            authHeaders,
+          );
+
+          setExistingInterview(interviewRes.data);
+          setForm({
+            cname: interviewRes.data.cname || "",
+            intDate: interviewRes.data.intDate || "",
+            intTime: interviewRes.data.intTime || "",
+            intPlace: interviewRes.data.intPlace || "",
+            candidateName: interviewRes.data.candidateName || "",
+            apPos: interviewRes.data.apPos || "",
+            selection: interviewRes.data.selection || "selected",
+          });
+
+          setResultForm({
+            interviewResult: interviewRes.data.interviewResult || "pending",
+            remarks: interviewRes.data.remarks || "",
+          });
+        } catch {
+          // no interview saved yet
+        }
       } catch (err) {
         console.log(err);
         alert(err?.response?.data?.message || "Unable to load application");
@@ -49,16 +82,16 @@ function InterviewForm() {
       }
     };
 
-    fetchApplication();
+    fetchData();
   }, [id]);
 
-  const handleSubmit = async () => {
+  const handleScheduleSubmit = async () => {
     if (!application) return;
 
-    setSaving(true);
+    setSavingSchedule(true);
 
     try {
-      await axios.post(
+      const res = await axios.post(
         "http://localhost:5000/api/interview",
         {
           applicationId: application._id,
@@ -73,13 +106,42 @@ function InterviewForm() {
         authHeaders,
       );
 
+      setExistingInterview(res.data);
+      setResultForm({
+        interviewResult: res.data.interviewResult || "pending",
+        remarks: res.data.remarks || "",
+      });
+
       alert("Interview details saved successfully");
-      navigate("/company/applications");
     } catch (err) {
       console.log(err);
       alert(err?.response?.data?.message || "Failed to save interview");
     } finally {
-      setSaving(false);
+      setSavingSchedule(false);
+    }
+  };
+
+  const handleResultSubmit = async () => {
+    setSavingResult(true);
+
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/interview/${id}/result`,
+        {
+          interviewResult: resultForm.interviewResult,
+          remarks: resultForm.remarks,
+        },
+        authHeaders,
+      );
+
+      setExistingInterview(res.data);
+      alert("Interview result saved successfully");
+      navigate("/company/applications");
+    } catch (err) {
+      console.log(err);
+      alert(err?.response?.data?.message || "Failed to save interview result");
+    } finally {
+      setSavingResult(false);
     }
   };
 
@@ -91,6 +153,7 @@ function InterviewForm() {
     <div className="container mt-4">
       <h3>Schedule Interview</h3>
 
+      <label className="form-label">Company Name</label>
       <input
         className="form-control mb-2"
         placeholder="Company Name"
@@ -98,6 +161,7 @@ function InterviewForm() {
         onChange={(e) => setForm({ ...form, cname: e.target.value })}
       />
 
+      <label className="form-label">Candidate Name</label>
       <input
         className="form-control mb-2"
         placeholder="Candidate Name"
@@ -105,6 +169,7 @@ function InterviewForm() {
         onChange={(e) => setForm({ ...form, candidateName: e.target.value })}
       />
 
+      <label className="form-label">Applied Position</label>
       <input
         className="form-control mb-2"
         placeholder="Applied Position"
@@ -112,6 +177,7 @@ function InterviewForm() {
         onChange={(e) => setForm({ ...form, apPos: e.target.value })}
       />
 
+      <label className="form-label">Interview Date</label>
       <input
         className="form-control mb-2"
         type="date"
@@ -119,6 +185,7 @@ function InterviewForm() {
         onChange={(e) => setForm({ ...form, intDate: e.target.value })}
       />
 
+      <label className="form-label">Interview Time</label>
       <input
         className="form-control mb-2"
         type="time"
@@ -126,6 +193,7 @@ function InterviewForm() {
         onChange={(e) => setForm({ ...form, intTime: e.target.value })}
       />
 
+      <label className="form-label">Interview Place</label>
       <input
         className="form-control mb-3"
         placeholder="Interview Place"
@@ -134,12 +202,59 @@ function InterviewForm() {
       />
 
       <button
-        className="btn btn-success"
-        onClick={handleSubmit}
-        disabled={saving}
+        className="btn btn-success mb-4"
+        onClick={handleScheduleSubmit}
+        disabled={savingSchedule}
       >
-        {saving ? "Saving..." : "Save Interview"}
+        {savingSchedule ? "Saving..." : "Save Interview"}
       </button>
+
+      {existingInterview && (
+        <div className="card p-3">
+          <h4>Interview Result / Remarks</h4>
+          <p className="text-muted mb-3">
+            Fill this after the candidate has given the interview.
+          </p>
+
+          <label className="form-label">Interview Result</label>
+          <select
+            className="form-control mb-3"
+            value={resultForm.interviewResult}
+            onChange={(e) =>
+              setResultForm({
+                ...resultForm,
+                interviewResult: e.target.value,
+              })
+            }
+          >
+            <option value="pending">Pending</option>
+            <option value="selected">Selected</option>
+            <option value="rejected">Rejected</option>
+          </select>
+
+          <label className="form-label">Further Remarks</label>
+          <textarea
+            className="form-control mb-3"
+            rows="4"
+            placeholder="Further remarks (optional)"
+            value={resultForm.remarks}
+            onChange={(e) =>
+              setResultForm({
+                ...resultForm,
+                remarks: e.target.value,
+              })
+            }
+          />
+
+          <button
+            className="btn btn-primary"
+            onClick={handleResultSubmit}
+            disabled={savingResult}
+          >
+            {savingResult ? "Saving..." : "Save Result"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
